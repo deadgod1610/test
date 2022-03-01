@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  envoy:
+    image: envoyproxy/envoy:v1.14-latest
+    container_name: front-proxy
+    networks:
+      - dev-net
+    ports:
+      - "80:80"
+    volumes:
+      - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml
+  # redis:
+  #   image: redis:alpine
+  #   networks:
+  #     - dev-net
+  #   volumes:
+  #     - ./redis:/root/redis
+  #   working_dir: /root/redis
+  #   command: redis-server ./redis.conf
+  zero:
+    image: dgraph/dgraph:v20.03.7
+    networks:
+      - dev-net
+    volumes:
+      - ./data:/dgraph
+    command: dgraph zero --my=zero:5080
+  alpha:
+    image: dgraph/dgraph:v20.03.7
+    networks:
+      - dev-net
+    volumes:
+      - ./data:/dgraph
+      - ./entrypoint:/entrypoint
+    command: dgraph alpha --my=alpha:7080 --lru_mb=2048 --zero=zero:5080 --whitelist 0.0.0.0/0
+    
+  ratel:
+    image: dgraph/dgraph:v20.03.7
+    networks:
+      - dev-net
+    volumes:
+      - ./data:/dgraph
+    command: dgraph-ratel
+
+networks:
+  dev-net:
+    external: true
